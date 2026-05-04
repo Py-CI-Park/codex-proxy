@@ -124,6 +124,8 @@ Confirm `gpt-5.5` is present when model-catalog work is involved.
 
 Use Lore-style commit messages: the first line should explain why the change exists, followed by context and useful git trailers.
 
+For commits authored in this personal fork, write the intent line, body, and trailer values in Korean by default. Keep imported upstream commits unchanged.
+
 Helpful trailers:
 
 ```text
