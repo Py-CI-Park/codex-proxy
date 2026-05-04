@@ -35,6 +35,17 @@ describe("api-key-catalog", () => {
     expect(PROVIDER_CATALOG.openrouter.defaultBaseUrl).toContain("openrouter.ai");
   });
 
+  it("lists GPT-5.5 in OpenAI-compatible provider catalogs", () => {
+    expect(PROVIDER_CATALOG.openai.models).toContainEqual({
+      id: "gpt-5.5",
+      displayName: "GPT-5.5",
+    });
+    expect(PROVIDER_CATALOG.openrouter.models).toContainEqual({
+      id: "openai/gpt-5.5",
+      displayName: "GPT-5.5",
+    });
+  });
+
   it("isBuiltinProvider returns true for builtin providers", () => {
     expect(isBuiltinProvider("anthropic")).toBe(true);
     expect(isBuiltinProvider("openai")).toBe(true);

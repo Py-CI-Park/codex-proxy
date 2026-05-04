@@ -136,6 +136,35 @@ describe("Ollama bridge routes", () => {
     });
   });
 
+  it("reports GPT-5.5 as its own Ollama family with the large Codex context window", async () => {
+    fetchMock.mockResolvedValueOnce(json({
+      id: "gpt-5.5",
+      displayName: "GPT 5.5",
+      inputModalities: ["text", "image"],
+      supportedReasoningEfforts: [{ reasoningEffort: "medium" }],
+      defaultReasoningEffort: "medium",
+    }));
+    const app = createApp();
+
+    const res = await app.request("/api/show", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-5.5" }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body.parameters).toBe("num_ctx 272000\nreasoning medium");
+    expect(body.model_info).toMatchObject({
+      "gpt-5.5.context_length": 272000,
+      upstream_id: "gpt-5.5",
+    });
+    expect(body.details).toMatchObject({
+      family: "gpt-5.5",
+      families: ["gpt-5.5"],
+    });
+  });
+
   it("converts non-streaming Ollama chat requests and responses", async () => {
     fetchMock.mockResolvedValueOnce(json({
       model: "gpt-5.4-mini",

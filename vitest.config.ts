@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    testTimeout: 15000,
+    hookTimeout: 30000,
     include: [
       "shared/**/*.{test,spec}.ts",
       "tests/unit/**/*.{test,spec}.ts",

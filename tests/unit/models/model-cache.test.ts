@@ -41,6 +41,10 @@ vi.mock("js-yaml", () => ({
 import { writeFile, mkdirSync, existsSync } from "fs";
 import { loadStaticModels, applyBackendModels } from "@src/models/model-store.js";
 
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
 describe("model cache writes to data/, not config/", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,14 +57,14 @@ describe("model cache writes to data/, not config/", () => {
 
     expect(writeFile).toHaveBeenCalledOnce();
     const writePath = vi.mocked(writeFile).mock.calls[0][0] as string;
-    expect(writePath).toContain("/fake/data/models-cache.yaml");
+    expect(normalizePath(writePath)).toContain("/fake/data/models-cache.yaml");
   });
 
   it("syncStaticModels never writes to config/models.yaml", () => {
     applyBackendModels([{ slug: "gpt-5.4", name: "GPT 5.4" }]);
 
     const writePath = vi.mocked(writeFile).mock.calls[0][0] as string;
-    expect(writePath).not.toContain("/fake/config/");
+    expect(normalizePath(writePath)).not.toContain("/fake/config/");
   });
 
   it("ensures data dir exists before writing cache", () => {

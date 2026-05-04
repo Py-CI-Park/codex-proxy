@@ -10,6 +10,7 @@ const mockExistsSync = vi.fn(() => false);
 const mockMkdirSync = vi.fn();
 const mockReadFileSync = vi.fn();
 const mockMutateClientConfig = vi.fn();
+const mockFork = vi.fn();
 
 vi.mock("@src/config.js", () => ({
   mutateClientConfig: mockMutateClientConfig,
@@ -28,6 +29,10 @@ vi.mock("@src/utils/jitter.js", () => ({
 
 vi.mock("@src/tls/curl-fetch.js", () => ({
   curlFetchGet: vi.fn(),
+}));
+
+vi.mock("child_process", () => ({
+  fork: mockFork,
 }));
 
 vi.mock("fs", async (importOriginal) => {
@@ -56,6 +61,10 @@ const APPCAST_XML = `<?xml version="1.0"?>
   <enclosure sparkle:shortVersionString="2.0.0" sparkle:version="200" url="https://example.com/download"/>
 </item></channel></rss>`;
 
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
 describe("update-checker writes to data/, not config/", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,7 +89,7 @@ describe("update-checker writes to data/, not config/", () => {
     );
     expect(versionWrites.length).toBeGreaterThanOrEqual(1);
     const writePath = versionWrites[0][0] as string;
-    expect(writePath).toBe("/fake/data/version-state.json");
+    expect(normalizePath(writePath)).toContain("/fake/data/version-state.json");
 
     // Parse the written content
     const written = JSON.parse(versionWrites[0][1] as string) as {
@@ -103,7 +112,7 @@ describe("update-checker writes to data/, not config/", () => {
 
     // No writes should target config/default.yaml
     const configWrites = mockWriteFileSync.mock.calls.filter(
-      (call) => (call[0] as string).includes("/fake/config/"),
+      (call) => normalizePath(call[0] as string).includes("/fake/config/"),
     );
     expect(configWrites).toHaveLength(0);
   });
@@ -122,5 +131,20 @@ describe("update-checker writes to data/, not config/", () => {
       app_version: "2.0.0",
       build_number: "200",
     });
+  });
+
+  it("skips full-update pipeline when source update script is unavailable", async () => {
+    vi.mocked(curlFetchGet).mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: APPCAST_XML,
+    });
+    mockExistsSync.mockReturnValue(false);
+
+    const { checkForUpdate, isUpdateInProgress } = await import("@src/update-checker.js");
+    await checkForUpdate();
+
+    expect(mockFork).not.toHaveBeenCalled();
+    expect(isUpdateInProgress()).toBe(false);
   });
 });

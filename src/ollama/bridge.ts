@@ -53,6 +53,7 @@ class OllamaBridgeError extends Error {
 }
 
 const CONTEXT_WINDOW_OVERRIDES = new Map<string, number>([
+  ["gpt-5.5", 272000],
   ["gpt-5.4", 272000],
   ["gpt-5.4-mini", 272000],
   ["gpt-5.3-codex", 272000],
@@ -107,6 +108,7 @@ function responseHeaders(init: HeadersInit, request?: Request): Headers {
 
 function inferFamily(modelId: string): string {
   const normalized = modelId.toLowerCase();
+  if (normalized.startsWith("gpt-5.5")) return "gpt-5.5";
   if (normalized.startsWith("gpt-5.4")) return "gpt-5.4";
   if (normalized.startsWith("gpt-5.3")) return "gpt-5.3";
   if (normalized.startsWith("gpt-5.2")) return "gpt-5.2";

@@ -122,11 +122,17 @@ function triggerFullUpdate(): void {
     return;
   }
 
+  const scriptPath = resolve(process.cwd(), "scripts/build/full-update.ts");
+  if (!existsSync(scriptPath)) {
+    console.warn("[UpdateChecker] Full-update script not found, skipping pipeline");
+    return;
+  }
+
   _updateInProgress = true;
   console.log("[UpdateChecker] Triggering full-update pipeline...");
 
   const child = fork(
-    resolve(process.cwd(), "scripts/build/full-update.ts"),
+    scriptPath,
     ["--force"],
     {
       execArgv: ["--import", "tsx"],

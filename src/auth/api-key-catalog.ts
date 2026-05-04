@@ -24,6 +24,7 @@ const ANTHROPIC_MODELS: CatalogModel[] = [
 ];
 
 const OPENAI_MODELS: CatalogModel[] = [
+  { id: "gpt-5.5", displayName: "GPT-5.5" },
   { id: "gpt-5.4", displayName: "GPT-5.4" },
   { id: "gpt-5.4-mini", displayName: "GPT-5.4 Mini" },
   { id: "gpt-5.3-codex", displayName: "GPT-5.3 Codex" },
@@ -43,6 +44,7 @@ const GEMINI_MODELS: CatalogModel[] = [
 const OPENROUTER_MODELS: CatalogModel[] = [
   { id: "anthropic/claude-opus-4.6", displayName: "Claude Opus 4.6" },
   { id: "anthropic/claude-sonnet-4.6", displayName: "Claude Sonnet 4.6" },
+  { id: "openai/gpt-5.5", displayName: "GPT-5.5" },
   { id: "openai/gpt-5.4", displayName: "GPT-5.4" },
   { id: "google/gemini-3.1-pro-preview", displayName: "Gemini 3.1 Pro" },
   { id: "google/gemini-3.1-flash-lite", displayName: "Gemini 3.1 Flash Lite" },
