@@ -12,6 +12,34 @@ This repository is a local Codex Proxy fork. Keep the fork easy to update from t
 
 ## Upstream Sync Routine
 
+Default policy: **stable-first, local-preserving**.
+
+When the user asks to "update from upstream", "apply the latest upstream", or similar:
+
+1. Fetch `origin` and `upstream` with tags and pruning.
+2. Compare `HEAD` against `upstream/master`.
+3. Summarize upstream commits, local-only commits, and likely risk before merging.
+4. Preserve local fork behavior unless upstream clearly supersedes it.
+5. Merge `upstream/master` by default.
+6. Do not adopt `dev`, beta tags, or prerelease branches unless the user explicitly asks for prerelease updates.
+7. Do not push to `upstream`.
+8. Do not commit secrets or local runtime artifacts.
+9. Run dependency install, build, tests, and runtime smoke checks before declaring completion.
+10. Commit verified integration changes with a Lore-style commit and push only to `origin`.
+
+Use the helper script for repeatable sync checks:
+
+```powershell
+# Preview only; safe default.
+.\scripts\sync-upstream.ps1
+
+# Merge stable upstream/master, install dependencies, build, and test.
+.\scripts\sync-upstream.ps1 -Apply
+
+# Also push the verified result to the personal fork.
+.\scripts\sync-upstream.ps1 -Apply -PushOrigin
+```
+
 Preferred merge-based routine for this personal fork:
 
 ```powershell
@@ -41,6 +69,13 @@ npm run build
 npm test
 git push --force-with-lease origin master
 ```
+
+Rebase/force-push rule:
+
+- Use merge by default.
+- Use rebase only when the user explicitly asks to rewrite the personal fork history.
+- Never force-push without explicit user instruction.
+- Stop and report before adopting prerelease targets unless the user's request explicitly includes beta/dev/prerelease.
 
 ## Local Runtime Files
 
