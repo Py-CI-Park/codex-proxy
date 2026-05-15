@@ -17,6 +17,8 @@ export interface CodexResponsesRequest {
   tools?: unknown[];
   /** Optional: tool choice strategy */
   tool_choice?: string | { type: string; name?: string };
+  /** Optional: allow multiple tool calls in parallel. */
+  parallel_tool_calls?: boolean;
   /** Optional: text output format (JSON mode / structured outputs) */
   text?: {
     format: {
@@ -30,12 +32,28 @@ export interface CodexResponsesRequest {
   previous_response_id?: string;
   /** Prompt cache key — stable per-conversation UUID for backend prompt caching. */
   prompt_cache_key?: string;
+  /** Per-installation routing/affinity hints (e.g. x-codex-installation-id).
+   *  Real Codex CLI sends this in every body so the upstream LB can pin the
+   *  client to a single backend instance, keeping the prompt cache warm. */
+  client_metadata?: Record<string, string>;
   /** Include additional response data (e.g. "reasoning.encrypted_content"). */
   include?: string[];
   /** When true, use WebSocket transport (enables previous_response_id and server-side storage). */
   useWebSocket?: boolean;
   /** Upstream turn-state token for sticky routing (not serialized to body). */
   turnState?: string;
+  /** Codex per-turn metadata JSON, forwarded as a header and WS client_metadata. */
+  turnMetadata?: string;
+  /** Optional Codex beta feature header. */
+  betaFeatures?: string;
+  /** Optional Codex client version header. */
+  version?: string;
+  /** Optional timing metrics opt-in header. */
+  includeTimingMetrics?: string;
+  /** Codex thread window identity, forwarded as a header and WS client_metadata. */
+  codexWindowId?: string;
+  /** Parent Codex thread id for subagent lineage. */
+  parentThreadId?: string;
 }
 
 /**
@@ -97,10 +115,17 @@ export interface CodexUsageRateLimit {
   secondary_window: CodexUsageRateWindow | null;
 }
 
+export interface CodexUsageAdditionalRateLimit {
+  limit_name: string;
+  metered_feature: string;
+  rate_limit: CodexUsageRateLimit | null;
+}
+
 export interface CodexUsageResponse {
   plan_type: string;
   rate_limit: CodexUsageRateLimit;
   code_review_rate_limit: CodexUsageRateLimit | null;
+  additional_rate_limits?: CodexUsageAdditionalRateLimit[] | null;
   credits: unknown;
   promo: unknown;
 }

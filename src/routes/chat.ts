@@ -19,9 +19,9 @@ import { getRealClientIp } from "../utils/get-real-client-ip.js";
 import { randomUUID } from "crypto";
 import {
   handleProxyRequest,
-  handleDirectRequest,
-  type FormatAdapter,
 } from "./shared/proxy-handler.js";
+import { handleDirectRequest } from "./shared/direct-request-handler.js";
+import type { FormatAdapter, ProxyRequest } from "./shared/proxy-handler-types.js";
 import type { UpstreamRouter } from "../proxy/upstream-router.js";
 import { summarizeRequestForLog } from "../logs/request-summary.js";
 
@@ -54,9 +54,9 @@ function makeOpenAIFormat(wantReasoning: boolean): FormatAdapter {
         code: "codex_api_error",
       },
     }),
-    streamTranslator: (api, response, model, onUsage, onResponseId, tupleSchema) =>
-      streamCodexToOpenAI(api, response, model, onUsage, onResponseId, wantReasoning, tupleSchema),
-    collectTranslator: (api, response, model, tupleSchema) =>
+    streamTranslator: ({ api, response, model, onUsage, onResponseId, onResponseCompleted, tupleSchema }) =>
+      streamCodexToOpenAI(api, response, model, onUsage, onResponseId, wantReasoning, tupleSchema, onResponseCompleted),
+    collectTranslator: ({ api, response, model, tupleSchema }) =>
       collectCodexResponse(api, response, model, wantReasoning, tupleSchema),
   };
 }
@@ -122,10 +122,11 @@ export function createChatRoutes(
     const fmt = makeOpenAIFormat(wantReasoning);
     const { codexRequest, tupleSchema } = translateToCodexRequest(req);
     const displayModel = buildDisplayModelName(parseModelName(req.model));
-    const proxyReq = {
+    const proxyReq: ProxyRequest = {
       codexRequest,
       model: displayModel,
-      isStreaming: req.stream,
+      isStreaming: req.stream ?? false,
+      clientConversationId: req.user,
       tupleSchema,
     };
 
@@ -144,12 +145,13 @@ export function createChatRoutes(
     });
 
     if (routeMatch.kind === "api-key" || routeMatch.kind === "adapter") {
+      const directModel = routeMatch.resolvedModel ?? req.model;
       const directReq = {
         ...proxyReq,
-        model: req.model,
-        codexRequest: { ...codexRequest, model: req.model },
+        model: directModel,
+        codexRequest: { ...codexRequest, model: directModel },
       };
-      return handleDirectRequest(c, routeMatch.adapter, directReq, fmt);
+      return handleDirectRequest({ c, upstream: routeMatch.adapter, req: directReq, fmt });
     }
 
     // Auth check for Codex route only
@@ -167,7 +169,7 @@ export function createChatRoutes(
 
     const summary = accountPool.getPoolSummary();
     if (summary.active === 0) {
-      return handleProxyRequest(c, accountPool, cookieJar, proxyReq, fmt, proxyPool);
+      return handleProxyRequest({ c, accountPool, cookieJar, req: proxyReq, fmt, proxyPool });
     }
 
     const config = getConfig();
@@ -187,7 +189,7 @@ export function createChatRoutes(
       }
     }
 
-    return handleProxyRequest(c, accountPool, cookieJar, proxyReq, fmt, proxyPool);
+    return handleProxyRequest({ c, accountPool, cookieJar, req: proxyReq, fmt, proxyPool });
   });
 
   return app;

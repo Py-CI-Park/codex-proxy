@@ -1,3 +1,5 @@
+import "./utils/install-dev-logger.js";
+
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { loadConfig, loadFingerprint, getConfig, hasLocalOverride } from "./config.js";
@@ -10,6 +12,7 @@ import { logger } from "./middleware/logger.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { dashboardAuth } from "./middleware/dashboard-auth.js";
 import { logCapture } from "./middleware/log-capture.js";
+import { cors } from "./middleware/cors.js";
 
 import type { UpstreamAdapter } from "./proxy/upstream-adapter.js";
 import { createAuthRoutes } from "./routes/auth.js";
@@ -21,6 +24,7 @@ import { createModelRoutes } from "./routes/models.js";
 import { createWebRoutes } from "./routes/web.js";
 import { CookieJar } from "./proxy/cookie-jar.js";
 import { ProxyPool } from "./proxy/proxy-pool.js";
+import { setWsPoolConfig, getWsPool } from "./proxy/ws-pool.js";
 import { createProxyRoutes } from "./routes/proxies.js";
 import { createResponsesRoutes } from "./routes/responses.js";
 import { startUpdateChecker, stopUpdateChecker } from "./update-checker.js";
@@ -42,6 +46,9 @@ import { ApiKeyPool } from "./auth/api-key-pool.js";
 import { createApiKeyRoutes } from "./routes/api-keys.js";
 import { createAdapterForEntry } from "./proxy/adapter-factory.js";
 import { startOllamaBridge, stopOllamaBridge } from "./ollama/server.js";
+import { createOfficialAgentRoutes } from "./routes/official-agent.js";
+import { installUncaughtErrorHandlers } from "./logs/error-log.js";
+import { awaitServerListening } from "./utils/await-listening.js";
 
 export interface ServerHandle {
   close: () => Promise<void>;
@@ -64,6 +71,11 @@ function urlHostForLocalRequest(host: string): string {
  * Throws on config errors instead of calling process.exit().
  */
 export async function startServer(options?: StartOptions): Promise<ServerHandle> {
+  // Funnel uncaught errors / unhandled rejections into the local
+  // error log before anything else can throw. Idempotent — Electron
+  // main may have already called this earlier.
+  installUncaughtErrorHandlers("server");
+
   // Load configuration
   console.log("[Init] Loading configuration...");
   const config = loadConfig();
@@ -102,6 +114,7 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   const app = new Hono();
 
   // Global middleware
+  app.use("*", cors);
   app.use("*", requestId);
   app.use("*", logger);
   app.use("*", errorHandler);
@@ -110,6 +123,15 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
 
   // Build upstream router from config
   const cfg = getConfig();
+
+  // Wire WS connection pool to user config (defaults to enabled). Without
+  // this call `getWsPool()` would always use DEFAULT_WS_POOL_CONFIG and
+  // ignore `ws_pool.enabled: false` overrides — breaking the rollback path.
+  setWsPoolConfig({
+    enabled: cfg.ws_pool.enabled,
+    maxAgeMs: cfg.ws_pool.max_age_ms,
+    maxPerAccount: cfg.ws_pool.max_per_account,
+  });
   const adapters = new Map<string, UpstreamAdapter>();
   if (cfg.providers.openai) {
     adapters.set(
@@ -170,6 +192,7 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   app.route("/", messagesRoutes);
   app.route("/", geminiRoutes);
   app.route("/", responsesRoutes);
+  app.route("/", createOfficialAgentRoutes());
   app.route("/", proxyRoutes);
   app.route("/", createModelRoutes(apiKeyPool));
   app.route("/", webRoutes);
@@ -229,6 +252,13 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
     hostname: host,
     port,
   });
+
+  // `serve()` returns synchronously before `listen()` actually binds.
+  // Wait for the listening event (or surface bind errors as a real
+  // rejection of startServer) so callers' try/catch can react —
+  // notably main.ts's port-fallback path, which was getting bypassed
+  // because EADDRINUSE fired after `await startServer(...)` resolved.
+  await awaitServerListening(server);
 
   // Resolve actual port (may differ from requested when port=0)
   const addr = server.address();
@@ -299,8 +329,11 @@ async function main() {
     }, 10_000);
     if (forceExit.unref) forceExit.unref();
 
-    handle.close().then(() => {
+    handle.close().then(async () => {
       getTransport().destroy?.();
+      try {
+        await getWsPool().shutdown();
+      } catch { /* never throws today, but defend against future regressions */ }
       console.log("[Shutdown] Server closed, cleanup complete.");
       clearTimeout(forceExit);
       process.exit(0);

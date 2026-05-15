@@ -53,9 +53,11 @@ class OllamaBridgeError extends Error {
 }
 
 const CONTEXT_WINDOW_OVERRIDES = new Map<string, number>([
-  ["gpt-5.5", 272000],
-  ["gpt-5.4", 272000],
-  ["gpt-5.4-mini", 272000],
+  ["gpt-5.5", 400000],
+  ["gpt-5.4", 400000],
+  ["gpt-5.4-pro", 400000],
+  ["gpt-5.4-mini", 400000],
+  ["gpt-5.4-nano", 400000],
   ["gpt-5.3-codex", 272000],
   ["gpt-5.3-codex-spark", 272000],
   ["gpt-5.2", 272000],
