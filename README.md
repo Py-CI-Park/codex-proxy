@@ -216,8 +216,8 @@ curl http://localhost:8080/v1/chat/completions \
 
 | 模型 ID | 推理等级 | 当前上下文 | 最大上下文 | 最大输出 | 输出 | 说明 |
 |---------|---------|------------|------------|----------|------|------|
-| `gpt-5.5` | low / medium / high / xhigh | 272,000 | 272,000 | 128,000 | 文本 | 复杂编码、研究和真实工作流旗舰模型 |
-| `gpt-5.4` | low / medium / high / xhigh | 272,000 | 1,000,000 | 128,000 | 文本 | 日常编码强模型（默认） |
+| `gpt-5.5` | low / medium / high / xhigh | 272,000 | 272,000 | 128,000 | 文本 | 复杂编码、研究和真实工作流旗舰模型（默认） |
+| `gpt-5.4` | low / medium / high / xhigh | 272,000 | 1,000,000 | 128,000 | 文本 | 日常编码强模型 |
 | `gpt-5.4-mini` | low / medium / high / xhigh | 400,000 | — | 128,000 | 文本 | 5.4 轻量版 |
 | `gpt-5.3-codex` | low / medium / high / xhigh | 400,000 | — | 128,000 | 文本 | 5.3 编程优化模型 |
 | `gpt-5.2` | low / medium / high / xhigh | 400,000 | — | 128,000 | 文本 | 专业工作 + 长时间代理 |
@@ -263,7 +263,7 @@ curl -N http://localhost:8080/v1/responses \
 
 ## 🔗 客户端接入
 
-> 所有客户端的 API Key 均从控制面板 (`http://localhost:8080`) 获取。模型名填具体 ID（默认 `gpt-5.4`）或任意 [可用模型](#-可用模型) ID。
+> 所有客户端的 API Key 均从控制面板 (`http://localhost:8080`) 获取。模型名填具体 ID（默认 `gpt-5.5`）或任意 [可用模型](#-可用模型) ID。
 
 ### Claude Code (CLI)
 
@@ -294,7 +294,7 @@ wire_api = "responses"
 Authorization = "Bearer your-api-key"
 
 [profiles.default]
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_provider = "proxy_codex"
 ```
 
@@ -359,7 +359,7 @@ wire_api = "responses"
 Authorization = "Bearer your-api-key"
 
 [profiles.default]
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_provider = "proxy_codex"
 ```
 

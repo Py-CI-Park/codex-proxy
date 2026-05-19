@@ -25,7 +25,7 @@ vi.mock("@src/config.js", () => ({
       originator: "desktop",
     },
     api: { base_url: "https://chatgpt.com/backend-api" },
-    model: { default: "gpt-5.4" },
+    model: { default: "gpt-5.5" },
     server: { proxy_api_key: null },
     auth: {
       jwt_token: null,
@@ -133,7 +133,7 @@ describe("GET /debug/fingerprint", () => {
     };
     expect(body.headers["User-Agent"]).toContain("Codex/");
     expect(body.client.app_version).toBe("1.2024.0");
-    expect(body.model.default).toBe("gpt-5.4");
+    expect(body.model.default).toBe("gpt-5.5");
   });
 
   it("returns 404 in production from non-localhost", async () => {

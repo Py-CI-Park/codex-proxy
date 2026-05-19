@@ -8,7 +8,7 @@ const mockConfig = {
   server: { port: 8080, proxy_api_key: null as string | null },
   tls: { proxy_url: null as string | null, force_http11: false },
   model: {
-    default: "gpt-5.4",
+    default: "gpt-5.5",
     default_reasoning_effort: null as string | null,
     aliases: {} as Record<string, string>,
     inject_desktop_context: false,
@@ -124,7 +124,7 @@ describe("GET /admin/general-settings", () => {
       port: 8080,
       proxy_url: null,
       force_http11: false,
-      default_model: "gpt-5.4",
+      default_model: "gpt-5.5",
       model_aliases: {},
       refresh_enabled: true,
       auto_update: true,
