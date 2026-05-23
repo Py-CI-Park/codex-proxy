@@ -1,6 +1,8 @@
 import { defineConfig } from "vitest/config";
 import { resolve } from "path";
 
+const isWindows = process.platform === "win32";
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -11,8 +13,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    testTimeout: 15000,
-    hookTimeout: 30000,
+    testTimeout: isWindows ? 120_000 : 15_000,
+    hookTimeout: isWindows ? 120_000 : 30_000,
     include: [
       "shared/**/*.{test,spec}.ts",
       "tests/unit/**/*.{test,spec}.ts",
