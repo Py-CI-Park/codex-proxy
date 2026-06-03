@@ -15,37 +15,20 @@ import { jitterInt } from "./utils/jitter.js";
 import { mutateYaml } from "./utils/yaml-mutate.js";
 import { curlFetchGet } from "./tls/curl-fetch.js";
 import { getConfigDir, getDataDir, isEmbedded } from "./paths.js";
+import { APPCAST_URL, parseAppcast, type UpdateState } from "./update-checker-appcast.js";
 
-function getConfigPath(): string {
-  return resolve(getConfigDir(), "default.yaml");
-}
-function getStatePath(): string {
-  return resolve(getDataDir(), "update-state.json");
-}
-const APPCAST_URL = "https://persistent.oaistatic.com/codex-app-prod/appcast.xml";
+export type { UpdateState } from "./update-checker-appcast.js";
+
+const getConfigPath = (): string => resolve(getConfigDir(), "default.yaml");
+const getStatePath = (): string => resolve(getDataDir(), "update-state.json");
 const POLL_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
-
-export interface UpdateState {
-  last_check: string;
-  latest_version: string | null;
-  latest_build: string | null;
-  download_url: string | null;
-  update_available: boolean;
-  current_version: string;
-  current_build: string;
-}
 
 let _currentState: UpdateState | null = null;
 let _pollTimer: ReturnType<typeof setTimeout> | null = null;
 let _updateInProgress = false;
 
-function getVersionOverridePath(): string {
-  return resolve(getDataDir(), "version-state.json");
-}
-
-function getExtractedFingerprintPath(): string {
-  return resolve(getDataDir(), "extracted-fingerprint.json");
-}
+const getVersionOverridePath = (): string => resolve(getDataDir(), "version-state.json");
+const getExtractedFingerprintPath = (): string => resolve(getDataDir(), "extracted-fingerprint.json");
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -108,29 +91,6 @@ function syncDefaultConfigVersion(version: string, build: string, chromiumVersio
       client.chromium_version = chromiumVersion;
     }
   });
-}
-
-function parseAppcast(xml: string): {
-  version: string | null;
-  build: string | null;
-  downloadUrl: string | null;
-} {
-  const itemMatch = xml.match(/<item>([\s\S]*?)<\/item>/i);
-  if (!itemMatch) return { version: null, build: null, downloadUrl: null };
-  const item = itemMatch[1];
-  // Support both attribute syntax (sparkle:version="X") and element syntax (<sparkle:version>X</sparkle:version>)
-  const versionMatch =
-    item.match(/sparkle:shortVersionString="([^"]+)"/) ??
-    item.match(/<sparkle:shortVersionString>([^<]+)<\/sparkle:shortVersionString>/);
-  const buildMatch =
-    item.match(/sparkle:version="([^"]+)"/) ??
-    item.match(/<sparkle:version>([^<]+)<\/sparkle:version>/);
-  const urlMatch = item.match(/url="([^"]+)"/);
-  return {
-    version: versionMatch?.[1] ?? null,
-    build: buildMatch?.[1] ?? null,
-    downloadUrl: urlMatch?.[1] ?? null,
-  };
 }
 
 function applyVersionUpdate(version: string, build: string): void {
@@ -196,17 +156,11 @@ function triggerFullUpdate(codexSourcePath: string | null = getConfiguredCodexSo
     return;
   }
 
-  const scriptPath = resolve(process.cwd(), "scripts/build/full-update.ts");
-  if (!existsSync(scriptPath)) {
-    console.warn("[UpdateChecker] Full-update script not found, skipping pipeline");
-    return;
-  }
-
   _updateInProgress = true;
   console.log("[UpdateChecker] Triggering full-update pipeline...");
 
   const child = fork(
-    scriptPath,
+    resolve(process.cwd(), "scripts/build/full-update.ts"),
     ["--path", codexSourcePath],
     {
       execArgv: ["--import", "tsx"],

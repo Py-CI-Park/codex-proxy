@@ -114,8 +114,10 @@ describe("release pipeline", () => {
     expect(existsSync(bumpYml)).toBe(true);
 
     const content = readFileSync(bumpYml, "utf-8");
-    // Must bump both root and electron package versions
+    // Stable releases are tag-only; package files keep the promoted version series.
     expect(content).toContain("package.json");
-    expect(content).toContain("packages/electron/package.json");
+    expect(content).toContain("git tag -a");
+    expect(content).toContain("tag-only");
+    expect(content).not.toContain("packages/electron/package.json");
   });
 });

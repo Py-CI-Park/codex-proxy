@@ -70,15 +70,15 @@ const APPCAST_XML = `<?xml version="1.0"?>
   <enclosure sparkle:shortVersionString="2.0.0" sparkle:version="200" url="https://example.com/download"/>
 </item></channel></rss>`;
 
-function normalizePath(path: unknown): string {
-  return String(path).replace(/\\/g, "/");
-}
-
 type YamlMutator = (data: Record<string, unknown>) => void;
+
+function normalizeTestPath(path: unknown): string {
+  return String(path).replace(/\\/g, "/").replace(/^[A-Z]:/i, "");
+}
 
 function getClientYamlMutator(): YamlMutator {
   const call = mockMutateYaml.mock.calls.find(
-    (entry) => normalizePath(entry[0]).endsWith("/fake/config/default.yaml"),
+    (entry) => normalizeTestPath(entry[0]) === "/fake/config/default.yaml",
   );
   if (!call) {
     throw new Error("config/default.yaml mutator was not called");
@@ -112,7 +112,7 @@ describe("update-checker syncs version state and config YAML", () => {
     );
     expect(versionWrites.length).toBeGreaterThanOrEqual(1);
     const writePath = versionWrites[0][0] as string;
-    expect(normalizePath(writePath)).toContain("/fake/data/version-state.json");
+    expect(normalizeTestPath(writePath)).toBe("/fake/data/version-state.json");
 
     // Parse the written content
     const written = JSON.parse(versionWrites[0][1] as string) as {
@@ -234,25 +234,8 @@ describe("update-checker syncs version state and config YAML", () => {
     expect(mockFork).not.toHaveBeenCalled();
   });
 
-  it("does not fork the full-update script when the script is unavailable", async () => {
-    process.env.CODEX_DESKTOP_PATH = "/Applications/Codex.app";
-    mockExistsSync.mockReturnValue(false);
-    vi.mocked(curlFetchGet).mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: APPCAST_XML,
-    });
-
-    const { checkForUpdate, isUpdateInProgress } = await import("@src/update-checker.js");
-    await checkForUpdate();
-
-    expect(mockFork).not.toHaveBeenCalled();
-    expect(isUpdateInProgress()).toBe(false);
-  });
-
   it("passes the configured Codex source path to full-update", async () => {
     process.env.CODEX_DESKTOP_PATH = "/Applications/Codex.app";
-    mockExistsSync.mockImplementation((path) => normalizePath(path).endsWith("/scripts/build/full-update.ts"));
     vi.mocked(curlFetchGet).mockResolvedValue({
       ok: true,
       status: 200,

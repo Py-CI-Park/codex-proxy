@@ -78,7 +78,7 @@ function checkProxyApiKey(c: Context, accountPool: AccountPool) {
   if (!config.server.proxy_api_key) return null;
 
   const authHeader = c.req.header("Authorization");
-  const providedKey = authHeader?.replace("Bearer ", "");
+  const providedKey = authHeader?.replace(/^bearer\s+/i, "");
   if (!providedKey || !accountPool.validateProxyApiKey(providedKey)) {
     c.status(401);
     return c.json({
@@ -140,9 +140,10 @@ export function createChatRoutes(
       return c.json(formatModelNotFound(req.model));
     }
 
-    const wantReasoning = !!req.reasoning_effort;
-    const fmt = makeOpenAIFormat(wantReasoning);
     const { codexRequest, tupleSchema } = translateToCodexRequest(req);
+    // Check after translation so suffix-parsed and config-default effort are included.
+    const wantReasoning = !!codexRequest.reasoning?.effort;
+    const fmt = makeOpenAIFormat(wantReasoning);
     const displayModel = buildDisplayModelName(parseModelName(req.model));
     const proxyReq: ProxyRequest = {
       codexRequest,
@@ -192,13 +193,13 @@ export function createChatRoutes(
       });
     }
 
+    const authError = checkProxyApiKey(c, accountPool);
+    if (authError) return authError;
+
     const summary = accountPool.getPoolSummary();
     if (summary.active === 0) {
       return handleProxyRequest({ c, accountPool, cookieJar, req: proxyReq, fmt, proxyPool });
     }
-
-    const authError = checkProxyApiKey(c, accountPool);
-    if (authError) return authError;
 
     return handleProxyRequest({ c, accountPool, cookieJar, req: proxyReq, fmt, proxyPool });
   });
