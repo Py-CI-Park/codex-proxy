@@ -10,12 +10,7 @@ import { errorHandler } from "@src/middleware/error-handler.js";
 
 function createApp(throwFn: () => never): Hono {
   const app = new Hono();
-  // Use Hono's onError to route thrown errors through our errorHandler.
-  // errorHandler(c, next) catches the error from `await next()` and returns
-  // the appropriate JSON response via `c.json()`.
-  app.onError((err, c) =>
-    errorHandler(c, async () => { throw err; }) as unknown as Response,
-  );
+  app.onError(errorHandler);
   app.all("/*", () => {
     throwFn();
   });
@@ -27,9 +22,9 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-// ── OpenAI-format errors (default) ───────────────────────────────
+// ?�?� OpenAI-format errors (default) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("errorHandler — OpenAI format (default routes)", () => {
+describe("errorHandler ??OpenAI format (default routes)", () => {
   it("returns 500 with server_error for generic Error", async () => {
     const app = createApp(() => { throw new Error("something broke"); });
     const res = await app.request("/v1/chat/completions");
@@ -98,9 +93,9 @@ describe("errorHandler — OpenAI format (default routes)", () => {
   });
 });
 
-// ── Anthropic-format errors ──────────────────────────────────────
+// ?�?� Anthropic-format errors ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("errorHandler — Anthropic format (/v1/messages)", () => {
+describe("errorHandler ??Anthropic format (/v1/messages)", () => {
   it("returns Anthropic error shape for /v1/messages", async () => {
     const app = createApp(() => { throw new Error("something broke"); });
     const res = await app.request("/v1/messages");
@@ -148,9 +143,9 @@ describe("errorHandler — Anthropic format (/v1/messages)", () => {
   });
 });
 
-// ── Gemini-format errors ─────────────────────────────────────────
+// ?�?� Gemini-format errors ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("errorHandler — Gemini format (/v1beta/)", () => {
+describe("errorHandler ??Gemini format (/v1beta/)", () => {
   it("returns Gemini error shape for /v1beta/ routes", async () => {
     const app = createApp(() => { throw new Error("something broke"); });
     const res = await app.request("/v1beta/test");
@@ -186,12 +181,12 @@ describe("errorHandler — Gemini format (/v1beta/)", () => {
   });
 });
 
-// ── Passthrough ──────────────────────────────────────────────────
+// ?�?� Passthrough ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("errorHandler — passthrough", () => {
+describe("errorHandler ??passthrough", () => {
   it("passes through successful responses without modification", async () => {
     const app = new Hono();
-    app.use("*", errorHandler);
+    app.onError(errorHandler);
     app.get("/health", (c) => c.json({ status: "ok" }));
     const res = await app.request("/health");
     expect(res.status).toBe(200);

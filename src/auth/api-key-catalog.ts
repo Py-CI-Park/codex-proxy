@@ -59,6 +59,7 @@ export const PROVIDER_CATALOG: Record<BuiltinProvider, ProviderMeta> = {
   anthropic: {
     displayName: "Anthropic",
     defaultBaseUrl: "https://api.anthropic.com/v1",
+    // Minimal fallback — overridden by dynamic fetch after API key entry.
     models: ANTHROPIC_MODELS,
   },
   openai: {

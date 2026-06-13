@@ -7,8 +7,8 @@
  */
 
 import { describe, it, expect, afterAll } from "vitest";
-import { execFileSync, spawnSync } from "child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "fs";
+import { execFileSync } from "child_process";
+import { existsSync, mkdtempSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -29,17 +29,29 @@ fi
 echo "$CODEX_ARCH"
 `;
 
+function findShell(): string | null {
+  for (const candidate of ["/bin/sh", "/usr/bin/sh", "sh"]) {
+    if (candidate.includes("/") && !existsSync(candidate)) continue;
+    try {
+      execFileSync(candidate, ["-c", "exit 0"], { stdio: "ignore", timeout: 1000 });
+      return candidate;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
+const shell = findShell();
+const describeIfShell = shell ? describe : describe.skip;
+
 function runArch(env: Record<string, string>): string {
-  return execFileSync("sh", ["-c", ARCH_SNIPPET], {
+  if (!shell) throw new Error("sh is not available");
+  return execFileSync(shell, ["-c", ARCH_SNIPPET], {
     env: { ...env },
     encoding: "utf-8",
     timeout: 5000,
   }).trim();
-}
-
-function hasPosixShell(): boolean {
-  const probe = spawnSync("sh", ["-c", "true"], { stdio: "ignore" });
-  return probe.error === undefined && probe.status === 0;
 }
 
 const tmpBase = mkdtempSync(join(tmpdir(), "entrypoint-arch-"));
@@ -54,9 +66,7 @@ function mockUnamePath(arch: string): string {
   return dir;
 }
 
-const describeWithShell = hasPosixShell() ? describe : describe.skip;
-
-describeWithShell("docker-entrypoint CODEX_ARCH detection", () => {
+describeIfShell("docker-entrypoint CODEX_ARCH detection", () => {
   it("maps aarch64 → arm64", () => {
     const mockDir = mockUnamePath("aarch64");
     const result = runArch({ PATH: `${mockDir}:/usr/bin:/bin` });

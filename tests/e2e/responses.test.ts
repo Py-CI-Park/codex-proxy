@@ -1,5 +1,5 @@
 /**
- * E2E tests for POST /v1/responses — Codex Responses API passthrough.
+ * E2E tests for POST /v1/responses ??Codex Responses API passthrough.
  *
  * Only mocks the external boundary (transport, config, paths, fs, background tasks).
  * CodexApi, AccountPool, CookieJar, all translation layers, all middleware run for real.
@@ -22,7 +22,7 @@ import {
 } from "@helpers/sse.js";
 import { createValidJwt } from "@helpers/jwt.js";
 
-// ── App imports (after mocks declared in e2e-setup) ──────────────────
+// ?�?� App imports (after mocks declared in e2e-setup) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 import { Hono } from "hono";
 import { requestId } from "@src/middleware/request-id.js";
@@ -35,7 +35,7 @@ import { CookieJar } from "@src/proxy/cookie-jar.js";
 import { ProxyPool } from "@src/proxy/proxy-pool.js";
 import { loadStaticModels } from "@src/models/model-store.js";
 
-// ── Per-test app lifecycle ───────────────────────────────────────────
+// ?�?� Per-test app lifecycle ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 interface TestContext {
   app: Hono;
@@ -63,7 +63,7 @@ function buildApp(opts?: { noAccount?: boolean }): TestContext {
 
   const app = new Hono();
   app.use("*", requestId);
-  app.use("*", errorHandler);
+  app.onError(errorHandler);
   app.route("/", createResponsesRoutes(accountPool, cookieJar, proxyPool));
   app.route("/", createModelRoutes());
   app.route("/", createWebRoutes(accountPool));
@@ -86,7 +86,7 @@ afterEach(() => {
   ctx.accountPool.destroy();
 });
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// ?�?� Helpers ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 function responsesRequest(body: unknown) {
   return ctx.app.request("/v1/responses", {
@@ -121,7 +121,7 @@ function parseNamedSSE(text: string): Array<{ event: string; data: unknown }> {
   return results;
 }
 
-// ── Tests ────────────────────────────────────────────────────────────
+// ?�?� Tests ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 describe("E2E: POST /v1/responses", () => {
   it("streaming: SSE passthrough with named events", async () => {
@@ -208,7 +208,7 @@ describe("E2E: POST /v1/responses", () => {
 
     // Verify the transport body has the resolved model ID
     const sentBody = JSON.parse(getLastTransportBody()!);
-    expect(sentBody.model).toBe("gpt-5.4");
+    expect(sentBody.model).toBe("gpt-5.5");
     // Reasoning effort should be set from suffix
     expect(sentBody.reasoning?.effort).toBe("high");
     // Fast suffix should survive the final Codex API serialization as upstream's priority tier.
@@ -297,7 +297,7 @@ describe("E2E: POST /v1/responses", () => {
   });
 
   // Non-streaming path: upstream 429 still surfaces as HTTP 429 + JSON
-  // error body — no SSE involved, so the status code is preserved.
+  // error body ??no SSE involved, so the status code is preserved.
   it("upstream 429 in non-streaming mode: returns HTTP 429 with rate_limit_error JSON", async () => {
     setTransportPost(async () =>
       makeErrorTransportResponse(429, JSON.stringify({ detail: "Rate limited" })),

@@ -1,5 +1,5 @@
 /**
- * Tests for Codex → OpenAI Chat Completions translation.
+ * Tests for Codex ??OpenAI Chat Completions translation.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -199,9 +199,9 @@ describe("collectCodexResponse", () => {
   });
 });
 
-// ── Usage details (streaming) ─────────────────────────────────────────
+// ?�?� Usage details (streaming) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("streamCodexToOpenAI — usage details", () => {
+describe("streamCodexToOpenAI ??usage details", () => {
   it("includes cached_tokens and reasoning_tokens in final streaming chunk", async () => {
     const chunks = await collectStreamOutput(usageStream());
     const dataChunks = chunks.filter((c) => c.startsWith("data: {"));
@@ -223,9 +223,9 @@ describe("streamCodexToOpenAI — usage details", () => {
   });
 });
 
-// ── Function call without deltas ──────────────────────────────────────
+// ?�?� Function call without deltas ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("streamCodexToOpenAI — function call without deltas", () => {
+describe("streamCodexToOpenAI ??function call without deltas", () => {
   it("emits full arguments in a single tool_call chunk when no deltas streamed", async () => {
     const chunks = await collectStreamOutput(toolCallNoDeltaStream());
     const dataChunks = chunks.filter((c) => c.startsWith("data: {"));
@@ -238,9 +238,9 @@ describe("streamCodexToOpenAI — function call without deltas", () => {
   });
 });
 
-// ── Usage details (non-streaming) ─────────────────────────────────────
+// ?�?� Usage details (non-streaming) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("collectCodexResponse — usage details", () => {
+describe("collectCodexResponse ??usage details", () => {
   it("includes cached_tokens in non-streaming response usage", async () => {
     mockEvents = usageStream();
     const { response } = await collectCodexResponse(
@@ -272,15 +272,15 @@ describe("collectCodexResponse — usage details", () => {
   });
 });
 
-// ── Unregistered callId defaults to index 0 ──────────────────────────
+// ?�?� Unregistered callId defaults to index 0 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("streamCodexToOpenAI — unregistered callId", () => {
+describe("streamCodexToOpenAI ??unregistered callId", () => {
   it("defaults tool_call index to 0 for delta with unknown callId", async () => {
     // Create a stream where a functionCallDelta arrives with no prior functionCallStart
     const events: ExtractedEvent[] = [
       createCreated("resp_unreg"),
       createInProgress("resp_unreg"),
-      // No functionCallStart — delta arrives for an unregistered callId
+      // No functionCallStart ??delta arrives for an unregistered callId
       createFunctionCallDelta("unknown_call", '{"key":"val"}'),
       createCompleted("resp_unreg", { input_tokens: 10, output_tokens: 5 }),
     ];
@@ -288,15 +288,15 @@ describe("streamCodexToOpenAI — unregistered callId", () => {
     const dataChunks = chunks.filter((c) => c.startsWith("data: {"));
     const toolChunks = dataChunks.filter((c) => c.includes('"tool_calls"'));
     expect(toolChunks.length).toBeGreaterThan(0);
-    // Parse the tool_call chunk — index should default to 0
+    // Parse the tool_call chunk ??index should default to 0
     const parsed = JSON.parse(toolChunks[0].replace("data: ", ""));
     expect(parsed.choices[0].delta.tool_calls[0].index).toBe(0);
   });
 });
 
-// ── Usage without reasoning_tokens omits completion_tokens_details ────
+// ?�?� Usage without reasoning_tokens omits completion_tokens_details ?�?�?�?�
 
-describe("streamCodexToOpenAI — usage without reasoning_tokens", () => {
+describe("streamCodexToOpenAI ??usage without reasoning_tokens", () => {
   it("omits completion_tokens_details when reasoning_tokens absent", async () => {
     // Usage with cached_tokens but no reasoning_tokens
     const events: ExtractedEvent[] = [
@@ -315,9 +315,9 @@ describe("streamCodexToOpenAI — usage without reasoning_tokens", () => {
   });
 });
 
-// ── wantReasoning=false suppresses reasoning_content ──────────────────
+// ?�?� wantReasoning=false suppresses reasoning_content ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("streamCodexToOpenAI — reasoning suppression", () => {
+describe("streamCodexToOpenAI ??reasoning suppression", () => {
   it("does not emit reasoning_content when wantReasoning is false", async () => {
     const chunks = await collectStreamOutput(reasoningStream(), false);
     const reasoningChunks = chunks.filter((c) => c.includes("reasoning_content"));
@@ -325,9 +325,9 @@ describe("streamCodexToOpenAI — reasoning suppression", () => {
   });
 });
 
-// ── onResponseId callback ─────────────────────────────────────────────
+// ?�?� onResponseId callback ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
-describe("streamCodexToOpenAI — onResponseId callback", () => {
+describe("streamCodexToOpenAI ??onResponseId callback", () => {
   it("calls onResponseId with the response ID", async () => {
     mockEvents = simpleTextStream();
     let receivedId: string | undefined;
@@ -340,5 +340,63 @@ describe("streamCodexToOpenAI — onResponseId callback", () => {
       chunks.push(chunk);
     }
     expect(receivedId).toBe("resp_1");
+  });
+});
+
+describe("image generation translation", () => {
+  const imgEvents: ExtractedEvent[] = [
+    createCreated("resp_img"),
+    createInProgress("resp_img"),
+    {
+      typed: {
+        type: "response.output_item.done",
+        outputIndex: 0,
+        item: {
+          type: "image_generation_call",
+          id: "item_img_123",
+          result: "fake_base64_image_content",
+          revised_prompt: "a beautiful red circle on white background",
+        }
+      },
+      imageGenerationDone: {
+        id: "item_img_123",
+        result: "fake_base64_image_content",
+        revised_prompt: "a beautiful red circle on white background",
+      }
+    },
+    createCompleted("resp_img", { input_tokens: 10, output_tokens: 10 }),
+  ];
+
+  it("streamCodexToOpenAI translates imageGenerationDone event into tool_calls", async () => {
+    const chunks = await collectStreamOutput(imgEvents);
+    const parsedChunks = chunks
+      .filter((c) => c.startsWith("data: {"))
+      .map((c) => JSON.parse(c.replace("data: ", "")));
+    const toolCallChunks = parsedChunks.filter((p) => p.choices[0].delta?.tool_calls);
+    // Per OpenAI streaming spec: start chunk (id+name+empty args) + arguments chunk
+    expect(toolCallChunks).toHaveLength(2);
+
+    const startTc = toolCallChunks[0].choices[0].delta.tool_calls[0];
+    expect(startTc.id).toBe("item_img_123");
+    expect(startTc.type).toBe("function");
+    expect(startTc.function.name).toBe("image_generation");
+    expect(startTc.function.arguments).toBe("");
+
+    const argsTc = toolCallChunks[1].choices[0].delta.tool_calls[0];
+    expect(argsTc.id).toBeUndefined();
+    const args = JSON.parse(argsTc.function.arguments);
+    expect(args.result).toBe("fake_base64_image_content");
+    expect(args.revised_prompt).toBe("a beautiful red circle on white background");
+  });
+
+  it("collectCodexResponse translates imageGenerationDone event into tool_calls", async () => {
+    mockEvents = imgEvents;
+    const { response } = await collectCodexResponse(fakeCodexApi, fakeResponse, "gpt-5.4");
+    expect(response.choices[0].message.tool_calls).toBeDefined();
+    const toolCall = response.choices[0].message.tool_calls![0];
+    expect(toolCall.function.name).toBe("image_generation");
+    const args = JSON.parse(toolCall.function.arguments);
+    expect(args.result).toBe("fake_base64_image_content");
+    expect(args.revised_prompt).toBe("a beautiful red circle on white background");
   });
 });

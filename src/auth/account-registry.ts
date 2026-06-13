@@ -6,10 +6,7 @@
  */
 
 import { randomBytes, timingSafeEqual } from "crypto";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import { getConfig } from "../config.js";
-import { getDataDir } from "../paths.js";
 import { jitter } from "../utils/jitter.js";
 import {
   decodeJwtPayload,
@@ -24,6 +21,7 @@ import type {
   CodexQuota,
 } from "./types.js";
 import { hasReachedCachedQuota } from "./quota-skip.js";
+import { isCfChallengeCooldownActive } from "./cf-challenge-cooldown.js";
 
 function safeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -62,6 +60,8 @@ export class AccountRegistry {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private persistence: AccountPersistence;
   private persistDisabled: boolean;
+  private persistBatchDepth = 0;
+  private persistDirty = false;
 
   constructor(
     persistence: AccountPersistence,
@@ -84,6 +84,19 @@ export class AccountRegistry {
    */
   isPersistDisabled(): boolean {
     return this.persistDisabled;
+  }
+
+  beginPersistenceBatch(): void {
+    this.persistBatchDepth++;
+  }
+
+  endPersistenceBatch(): void {
+    if (this.persistBatchDepth === 0) return;
+    this.persistBatchDepth--;
+    if (this.persistBatchDepth === 0 && this.persistDirty) {
+      this.persistDirty = false;
+      this.persistNow();
+    }
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────
@@ -175,18 +188,11 @@ export class AccountRegistry {
   }
 
   /**
-   * Read a single account's RT from the persisted file on disk.
+   * Read a single account's RT from the active persistence backend.
    * Used to detect cross-process updates before consuming a one-time RT.
    */
   readEntryRTFromDisk(entryId: string): string | null {
-    try {
-      const raw = readFileSync(resolve(getDataDir(), "accounts.json"), "utf-8");
-      const data = JSON.parse(raw) as { accounts?: Array<{ id: string; refreshToken?: string | null }> };
-      const entry = data.accounts?.find((a) => a.id === entryId);
-      return entry?.refreshToken ?? null;
-    } catch {
-      return null;
-    }
+    return this.persistence.readRefreshToken?.(entryId) ?? null;
   }
 
   setLabel(entryId: string, label: string | null): boolean {
@@ -313,6 +319,7 @@ export class AccountRegistry {
       // usable and we must report authenticated.
       if (
         entry.status === "active" &&
+        !isCfChallengeCooldownActive(entry.id) &&
         (!skipExhausted || !hasReachedCachedQuota(entry))
       ) {
         return true;
@@ -331,6 +338,7 @@ export class AccountRegistry {
       if (
         entry.status === "active" &&
         (!excludeSet || !excludeSet.has(entry.id)) &&
+        !isCfChallengeCooldownActive(entry.id) &&
         (!skipExhausted || !hasReachedCachedQuota(entry))
       ) {
         return true;
@@ -477,6 +485,7 @@ export class AccountRegistry {
       entry.cachedQuota = quota;
     }
     entry.quotaFetchedAt = new Date().toISOString();
+    entry.quotaVerifyRequired = false; // Reset the dirty flag on fresh update
     this.schedulePersist();
   }
 
@@ -568,6 +577,7 @@ export class AccountRegistry {
       changed = resetExpiredQuotaWindow(quota.code_review_rate_limit, nowSec) || changed;
 
       if (changed) {
+        entry.quotaVerifyRequired = true; // Mark dirty when offline reset rolls over
         this.schedulePersist();
       }
     }
@@ -594,6 +604,9 @@ export class AccountRegistry {
     if (entry.cachedQuota) {
       info.quota = entry.cachedQuota;
       info.quotaFetchedAt = entry.quotaFetchedAt;
+      if (entry.quotaVerifyRequired) {
+        info.quotaVerifyRequired = entry.quotaVerifyRequired;
+      }
     }
     return info;
   }
@@ -602,6 +615,10 @@ export class AccountRegistry {
 
   schedulePersist(): void {
     if (this.persistDisabled) return;
+    if (this.persistBatchDepth > 0) {
+      this.persistDirty = true;
+      return;
+    }
     if (this.persistTimer) return;
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
@@ -615,6 +632,10 @@ export class AccountRegistry {
       this.persistTimer = null;
     }
     if (this.persistDisabled) return;
+    if (this.persistBatchDepth > 0) {
+      this.persistDirty = true;
+      return;
+    }
     this.persistence.save([...this.accounts.values()]);
   }
 

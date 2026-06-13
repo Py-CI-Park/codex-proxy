@@ -187,8 +187,8 @@ If you see streaming AI text, the setup is working. If you get 401, double-check
 
 | Model ID | Reasoning | Current context | Max context | Max output | Output | Description |
 |----------|-----------|-----------------|-------------|------------|--------|-------------|
-| `gpt-5.5` | low / medium / high / xhigh | 272,000 | 272,000 | 128,000 | text | Frontier model for complex coding, research, and real-world work (default) |
-| `gpt-5.4` | low / medium / high / xhigh | 272,000 | 1,000,000 | 128,000 | text | Strong model for everyday coding |
+| `gpt-5.5` | low / medium / high / xhigh | 272,000 | 272,000 | 128,000 | text | Frontier model for complex coding, research, and real-world work |
+| `gpt-5.4` | low / medium / high / xhigh | 272,000 | 1,000,000 | 128,000 | text | Strong model for everyday coding (default) |
 | `gpt-5.4-mini` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | GPT-5.4 lightweight model |
 | `gpt-5.3-codex` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | GPT-5.3 coding-optimized model |
 | `gpt-5.2` | low / medium / high / xhigh | 400,000 | — | 128,000 | text | Professional work & long-running agents |
@@ -234,7 +234,7 @@ In the stream, the `image_generation_call` item's `result` field is a base64-enc
 
 ## 🔗 Client Setup
 
-> Get your API Key from the dashboard (`http://localhost:8080`). Use a concrete model ID (default `gpt-5.5`) or any [model ID](#-available-models) as the model name.
+> Get your API Key from the dashboard (`http://localhost:8080`). Use a concrete model ID (default `gpt-5.4`) or any [model ID](#-available-models) as the model name.
 
 ### Claude Code (CLI)
 
@@ -247,7 +247,7 @@ claude
 
 > Copy env vars from the **Anthropic SDK Setup** card in the dashboard (includes Opus / Sonnet / Haiku tier model config).
 >
-> Recommended models: Opus → `gpt-5.5`, Sonnet → `gpt-5.3-codex`, Haiku → `gpt-5.4-mini`.
+> Recommended models: Opus → `gpt-5.5`, Sonnet → `gpt-5.4`, Haiku → `gpt-5.3-codex`.
 
 ### Codex CLI
 
@@ -263,7 +263,7 @@ wire_api = "responses"
 Authorization = "Bearer your-api-key"
 
 [profiles.default]
-model = "gpt-5.5"
+model = "gpt-5.4"
 model_provider = "proxy_codex"
 ```
 
@@ -329,7 +329,7 @@ wire_api = "responses"
 Authorization = "Bearer your-api-key"
 
 [profiles.default]
-model = "gpt-5.5"
+model = "gpt-5.4"
 model_provider = "proxy_codex"
 ```
 

@@ -33,7 +33,7 @@ import { loadStaticModels } from "@src/models/model-store.js";
 import { getConfig } from "@src/config.js";
 import { createMockConfig } from "@helpers/config.js";
 
-// ── Per-test app lifecycle ───────────────────────────────────────────
+// ?�?� Per-test app lifecycle ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 interface TestContext {
   app: Hono;
@@ -56,14 +56,14 @@ function buildApp(accountCount: number): TestContext {
   }
   const app = new Hono();
   app.use("*", requestId);
-  app.use("*", errorHandler);
+  app.onError(errorHandler);
   app.route("/", createChatRoutes(accountPool, cookieJar, proxyPool));
   app.route("/", createModelRoutes());
   app.route("/", createWebRoutes(accountPool));
   return { app, accountPool, cookieJar, proxyPool };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// ?�?� Helpers ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 function chatRequest(app: Hono, body: unknown) {
   return app.request("/v1/chat/completions", {
@@ -82,7 +82,7 @@ function defaultBody(overrides?: Record<string, unknown>) {
   };
 }
 
-// ── Tests ────────────────────────────────────────────────────────────
+// ?�?� Tests ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 describe("concurrent requests", () => {
   let ctx: TestContext;
@@ -146,7 +146,7 @@ describe("concurrent requests", () => {
       auth: { max_concurrent_per_account: 1 },
     }));
     ctx = buildApp(3);
-    // Fire 3 concurrent requests — exactly matches account count
+    // Fire 3 concurrent requests ??exactly matches account count
     const requests = Array.from({ length: 3 }, () =>
       chatRequest(ctx.app, defaultBody()),
     );
